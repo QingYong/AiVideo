@@ -41,35 +41,14 @@
             </div>
           </div>
           <h2 class="settings-title">AI 服务配置</h2>
-          <p class="settings-desc">先用推荐模板快速落配置，再按服务类型微调。工作台创建集时会锁定所选图片、视频和音频能力。</p>
+          <p class="settings-desc">文本 Agent 默认使用 OpenAI 兼容协议（Base URL + <span class="mono">/v1</span>，Bearer API Key）。请按服务商文档填写端点与模型，或使用下方快捷模板。</p>
         </div>
-        <section class="setup-panel card">
-          <div class="setup-panel-head">
-            <div>
-              <div class="setup-kicker">Quick Setup</div>
-              <div class="setup-title">火宝推荐配置</div>
-              <div class="setup-desc">一键写入文本、图片、视频、音频四类推荐配置，适合作为开箱默认方案。</div>
-            </div>
-            <button class="btn btn-primary" @click="presetDialog = true">
-              <Sparkles :size="14" /> 火宝一键配置
-            </button>
-          </div>
-          <div class="preset-grid">
-            <article v-for="preset in huobaoPresetCards" :key="preset.serviceType" class="preset-card">
-              <div class="preset-card-top">
-                <span class="preset-service">{{ preset.label }}</span>
-                <span class="tag tag-accent">{{ preset.provider }}</span>
-              </div>
-              <div class="preset-model mono">{{ preset.model }}</div>
-              <div class="preset-base mono">{{ preset.baseUrl }}</div>
-            </article>
-          </div>
-        </section>
         <section class="setup-panel card">
           <div class="setup-panel-head compact">
             <div>
+              <div class="setup-kicker">Templates</div>
               <div class="setup-title">快捷模板</div>
-              <div class="setup-desc">选择服务类型后，直接用模板填充推荐的 `provider / base URL / model`。</div>
+              <div class="setup-desc">添加某类服务时可用模板预填 <span class="mono">provider / Base URL / model</span>；兼容任意实现 OpenAI Chat Completions 的网关。</div>
             </div>
           </div>
           <div class="template-row">
@@ -294,7 +273,7 @@
         </div>
         <label class="field">
           <span class="field-label">配置名称</span>
-          <input v-model="cfgForm.name" class="input" placeholder="如 火宝默认图像服务" />
+          <input v-model="cfgForm.name" class="input" placeholder="如 默认图像服务" />
         </label>
         <label class="field"><span class="field-label">服务商</span>
           <BaseSelect v-model="cfgForm.provider" :options="providerSelectOptions" placeholder="选择服务商" searchable />
@@ -330,41 +309,6 @@
       </form>
     </div>
 
-    <!-- Huobao Preset Dialog -->
-    <div v-if="presetDialog" class="overlay" @click.self="presetDialog = false">
-      <form class="modal card config-modal" @submit.prevent="applyHuobaoPreset">
-        <div class="config-modal-head">
-          <div>
-            <div class="setup-kicker">Huobao Preset</div>
-            <h2 class="modal-title">火宝一键配置</h2>
-            <div class="modal-note">按火宝推荐链路自动创建或更新 4 条服务配置，并同时初始化 5 个 Agent 的默认模型。</div>
-          </div>
-          <span class="tag tag-success">推荐</span>
-        </div>
-        <div class="huobao-grid">
-          <label class="field">
-            <span class="field-label">Huobao API Key <span class="dim">(统一用于文本 / 图片 / 视频 / 音频)</span></span>
-            <input v-model="huobaoForm.apiKey" class="input" type="password" placeholder="用于 api.chatfire.site 全链路服务" />
-            <span class="field-hint">还没有账号？<a href="https://api.chatfire.site/" target="_blank" rel="noopener">立即注册 →</a></span>
-          </label>
-        </div>
-        <div class="preset-grid compact">
-          <article v-for="preset in huobaoPresetCards" :key="`${preset.serviceType}-${preset.provider}`" class="preset-card">
-            <div class="preset-card-top">
-              <span class="preset-service">{{ preset.label }}</span>
-              <span class="tag tag-accent">{{ preset.provider }}</span>
-            </div>
-            <div class="preset-model mono">{{ preset.model }}</div>
-            <div class="preset-base mono">{{ preset.baseUrl }}</div>
-          </article>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn" @click="presetDialog = false">取消</button>
-          <button type="submit" class="btn btn-primary">创建并启用</button>
-        </div>
-      </form>
-    </div>
-
     <!-- Add Skill Dialog -->
     <div v-if="addSkillDialog" class="overlay" @click.self="addSkillDialog = false">
       <form class="modal card" @submit.prevent="confirmAddSkill">
@@ -391,7 +335,7 @@
 </template>
 
 <script setup>
-import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu, Sparkles } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, FileText, ChevronDown, Check, Loader2, Bot, Cpu } from 'lucide-vue-next'
 import BaseSelect from '~/components/BaseSelect.vue'
 import { toast } from 'vue-sonner'
 import { aiConfigAPI, agentConfigAPI, skillsAPI } from '~/composables/useApi'
@@ -415,11 +359,9 @@ watch(showAdvanced, (v) => {
 const cfgs = ref([])
 const cfgDialog = ref(false)
 const cfgEditId = ref(null)
-const presetDialog = ref(false)
 const cfgTesting = ref(false)
 const cfgTestResult = ref(null)
 const cfgForm = reactive({ name: '', provider: '', api_key: '', base_url: '', modelStr: '', service_type: 'text', priority: 0 })
-const huobaoForm = reactive({ apiKey: '' })
 const serviceTypes = [{ type: 'text', label: '文本' }, { type: 'image', label: '图片' }, { type: 'video', label: '视频' }, { type: 'audio', label: '音频' }]
 const providers = ['ali', 'chatfire', 'gemini', 'minimax', 'openai', 'openrouter', 'vidu', 'volcengine']
 const providerSelectOptions = computed(() => providers.map(p => ({ label: p, value: p })))
@@ -431,30 +373,26 @@ const serviceMeta = {
 }
 const providerPresets = {
   text: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-preview'] },
-    openrouter: { label: 'OpenRouter 推荐', baseUrl: 'https://openrouter.ai/api', models: ['google/gemini-3-flash-preview'] },
-    openai: { label: 'OpenAI 推荐', baseUrl: 'https://api.openai.com', models: ['gpt-4.1-mini'] },
+    openai: { label: 'OpenAI 兼容（官方或自建网关）', baseUrl: 'https://api.openai.com', models: ['gpt-4o-mini'] },
+    openrouter: { label: 'OpenRouter', baseUrl: 'https://openrouter.ai/api', models: ['openai/gpt-4o-mini'] },
+    gemini: { label: 'Google Gemini（官方）', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-2.5-flash'] },
+    volcengine: { label: '火山方舟文本（OpenAI 兼容）', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-1.5-pro-32k'] },
+    chatfire: { label: 'OpenAI 兼容中转（旧称 ChatFire）', baseUrl: 'https://api.chatfire.site', models: ['gpt-4o-mini'] },
   },
   image: {
-    chatfire: { label: 'ChatFire 推荐', baseUrl: 'https://api.chatfire.site', models: ['doubao-seedream-4-5-251128'] },
-    gemini: { label: 'Gemini 推荐', baseUrl: 'https://api.chatfire.site', models: ['gemini-3-pro-image-preview'] },
-    volcengine: { label: '火山推荐', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
+    openai: { label: 'OpenAI 图像（DALL·E 等）', baseUrl: 'https://api.openai.com', models: ['dall-e-3'] },
+    gemini: { label: 'Google Gemini 图片', baseUrl: 'https://generativelanguage.googleapis.com', models: ['gemini-2.5-flash-image'] },
+    volcengine: { label: '火山方舟图片', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedream-4-0-250828'] },
   },
   video: {
-    volcengine: { label: '火宝视频', baseUrl: 'https://api.chatfire.site/volcengine', models: ['doubao-seedance-1-5-pro-251215'] },
-    vidu: { label: 'Vidu 推荐', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
-    ali: { label: '阿里推荐', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
+    volcengine: { label: '火山方舟视频', baseUrl: 'https://ark.cn-beijing.volces.com', models: ['doubao-seedance-1-5-pro-251215'] },
+    vidu: { label: 'Vidu', baseUrl: 'https://api.vidu.com', models: ['viduq3-turbo'] },
+    ali: { label: '阿里通义万相', baseUrl: 'https://dashscope.aliyuncs.com', models: ['wan2.6-i2v-flash'] },
   },
   audio: {
-    minimax: { label: '火宝音频', baseUrl: 'https://api.chatfire.site/minimax', models: ['speech-2.8-hd'] },
+    minimax: { label: 'MiniMax TTS', baseUrl: 'https://api.minimax.chat', models: ['speech-02-hd'] },
   },
 }
-const huobaoPresetCards = [
-  { serviceType: 'text', label: '文本', provider: 'chatfire', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-preview', priority: 100 },
-  { serviceType: 'image', label: '图片', provider: 'gemini', baseUrl: 'https://api.chatfire.site', model: 'gemini-3-pro-image-preview', priority: 99 },
-  { serviceType: 'video', label: '视频', provider: 'volcengine', baseUrl: 'https://api.chatfire.site/volcengine', model: 'doubao-seedance-1-5-pro-251215', priority: 98 },
-  { serviceType: 'audio', label: '音频', provider: 'minimax', baseUrl: 'https://api.chatfire.site/minimax', model: 'speech-2.8-hd', priority: 97 },
-]
 const endpointPrefixes = {
   chatfire: '/v1',
   openai: '/v1',
@@ -555,22 +493,6 @@ async function saveCfg() {
     cfgDialog.value = false; toast.success('已保存'); loadCfgs()
   } catch (e) { toast.error(e.message) }
 }
-async function applyHuobaoPreset() {
-  if (!huobaoForm.apiKey) {
-    toast.warning('请填写 Huobao API Key')
-    return
-  }
-  try {
-    await aiConfigAPI.huobaoPreset(huobaoForm.apiKey)
-    await loadCfgs()
-    await loadAgents()
-    presetDialog.value = false
-    toast.success('火宝推荐配置与默认 Agent LLM 已写入')
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
-
 // ===== Agent Configs =====
 const agentCfgs = ref([])
 const editingAgent = ref(null)
@@ -1165,20 +1087,6 @@ onMounted(() => { loadCfgs(); loadAgents(); loadAllSkills() })
   color: var(--text-3);
   word-break: break-all;
 }
-.huobao-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 10px;
-}
-.huobao-grid .field-hint a {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 500;
-}
-.huobao-grid .field-hint a:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 900px) {
   .preset-grid,
   .preset-grid.compact {
