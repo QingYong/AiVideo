@@ -4,8 +4,7 @@
   "description": "",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "sh -c 'PORT=5680 tsx watch src/index.ts & BACKEND_URL=http://localhost:5680 npm run dev:web & wait'",
-    "dev:web": "nuxt dev --cwd src/web --port 5679",
+    "dev": "nuxt dev --cwd src/web --port 5679",
     "start": "tsx src/index.ts",
     "build": "npm run build:web && tsc",
     "build:web": "nuxt generate --cwd src/web",
